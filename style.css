@@ -1,32 +1,34 @@
 * { box-sizing: border-box; }
 
-body {
-    font-family: 'Inter', sans-serif;
-    background-color: #0b1120;
-    color: #f8fafc;
-    margin: 0;
-    padding: 20px 10px;
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-}
-
+body { font-family: 'Inter', sans-serif; background-color: #0b1120; color: #f8fafc; margin: 0; padding: 20px 10px; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; }
 .container { width: 100%; max-width: 1000px; margin: 0 auto; }
 
+/* HEADER */
 header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
 .logo-area { display: flex; align-items: center; gap: 10px; }
 h1 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
 .version-tag { background: #3b82f6; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 6px; border-radius: 6px; letter-spacing: 1px; }
 
+/* YENİ: Header Sağ Taraf (Buton + Saat) */
+.header-right { display: flex; align-items: center; gap: 15px; }
+.notepad-btn { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); padding: 8px 14px; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s; font-family: 'Inter', sans-serif;}
+.notepad-btn:hover { background: #f59e0b; color: #fff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2); }
 .datetime-badge { background: rgba(30, 41, 59, 0.5); color: #94a3b8; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); }
 
+/* LAYOUT */
 .main-layout { display: flex; gap: 30px; align-items: stretch; }
-@media (max-width: 850px) { .main-layout { flex-direction: column; } .dashboard, .campus-wall { width: 100% !important; } }
+@media (max-width: 850px) { 
+    .main-layout { flex-direction: column; } 
+    .dashboard, .campus-wall { width: 100% !important; } 
+}
+@media (max-width: 500px) {
+    .header-right { flex-direction: column; align-items: flex-end; gap: 10px; }
+}
 
 .dashboard { width: 55%; }
 .campus-wall { width: 45%; background: #151e32; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 20px; display: flex; flex-direction: column; height: 650px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden; }
 
+/* ORTAK STİLLER */
 .column-header { display: flex; align-items: center; margin-bottom: 16px; }
 .column-header h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: #64748b; margin: 0; font-weight: 700; }
 .mt-gap { margin-top: 40px; }
@@ -37,6 +39,7 @@ h1 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
 .live-dot { background-color: #ef4444; box-shadow: 0 0 12px rgba(239, 68, 68, 0.6); animation: pulse-red 2s infinite; }
 @keyframes pulse-red { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
+/* KARTLAR */
 .card-grid { display: flex; flex-direction: column; gap: 12px; }
 .person-card { background: #1e293b; border: 1px solid rgba(255,255,255,0.03); border-radius: 16px; padding: 18px; cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
 .person-card:hover { background: #27354f; transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
@@ -45,7 +48,6 @@ h1 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
 .click-hint { font-size: 12px; color: #64748b; font-weight: 500; opacity: 0; transition: opacity 0.2s;}
 .person-card:hover .click-hint { opacity: 1; }
 .lesson-info { margin-top: 12px; font-size: 14px; color: #10b981; font-weight: 500; display: flex; align-items: center; gap: 8px; }
-
 .offline-card { background: transparent; border: 1px dashed rgba(255,255,255,0.1); }
 .offline-card .person-name { color: #64748b; }
 .offline-card:hover { background: rgba(30,41,59,0.5); }
@@ -74,9 +76,9 @@ h1 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
 .input-msg { flex: 1; background: transparent; border: none; color: #f8fafc; font-size: 14px; outline: none; font-family: 'Inter', sans-serif; }
 .input-msg::placeholder { color: #475569; }
 .send-btn { background: #3b82f6; color: white; border: none; width: 36px; height: 36px; border-radius: 10px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s; }
-.send-btn:hover { background: #2563eb; transform: scale(1.05); }
+.send-btn:hover { filter: brightness(1.2); transform: scale(1.05); }
 
-/* MODAL VE KONUM BUTONLARI */
+/* MODALLAR (Açılır Pencereler) */
 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 1000; padding: 20px; }
 .modal-overlay.active { opacity: 1; visibility: visible; }
 .modal-content { background: #0f172a; width: 100%; max-width: 420px; border-radius: 24px; padding: 30px; position: relative; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); max-height: 85vh; overflow-y: auto; }
@@ -90,11 +92,11 @@ h1 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
 .modal-header h2 { margin: 0 0 5px 0; font-size: 22px; color: #f8fafc; }
 .modal-header p { margin: 0; font-size: 13px; color: #3b82f6; font-weight: 600;}
 
+/* Hızlı Konum */
 .location-update-area { display: flex; flex-wrap: wrap; gap: 8px; background: rgba(30, 41, 59, 0.5); padding: 16px; border-radius: 14px; margin-bottom: 22px; border: 1px dashed rgba(59, 130, 246, 0.3); }
 .loc-title { width: 100%; font-size: 12px; color: #94a3b8; margin: 0 0 6px 0; font-weight: 600; letter-spacing: 0.5px; }
 .loc-btn { flex: 1; background: #0f172a; color: #e2e8f0; border: 1px solid rgba(255,255,255,0.1); padding: 10px 0; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); min-width: 25%; }
 .loc-btn:hover { background: #3b82f6; color: white; border-color: #3b82f6; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
-
 .manual-loc-info { margin-top: 12px; font-size: 13px; color: #38bdf8; font-weight: 600; display: flex; align-items: center; gap: 8px; background: rgba(56, 189, 248, 0.1); padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.2); }
 
 .schedule-day { margin-bottom: 16px; background: rgba(30,41,59,0.3); border-radius: 12px; padding: 15px; border: 1px solid rgba(255,255,255,0.02);}

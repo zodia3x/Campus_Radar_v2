@@ -12,7 +12,6 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // --- 2. GOOGLE SHEETS BAĞLANTISI ---
-// AŞAĞIDAKİ LİNKİ KENDİ GOOGLE SHEETS CSV LİNKİNLE DEĞİŞTİR:
 const sheetCSVUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ15L7k0B1pgvq_XWBMvvIBd8Qz-Y-4BY9pQDtCpGtdeqzZ_m-vX7m3_38WL6S5aKO6t0DRVCZXOtdK/pub?output=csv";
 
 let people = [];
@@ -23,7 +22,8 @@ window.onload = () => {
     fetchScheduleData();
     listenToWall();
     listenToLocations(); 
-    cleanOldData(); // Otomatik temizleyiciyi çalıştır
+    listenToNotepad(); // YENİ: Sabit notları dinle
+    cleanOldData(); 
 
     const savedName = localStorage.getItem("campusUserName");
     if (savedName) document.getElementById("sender-name").value = savedName;
@@ -31,19 +31,13 @@ window.onload = () => {
 
 async function fetchScheduleData() {
     try {
-        const finalUrl = sheetCSVUrl.includes('?') 
-            ? sheetCSVUrl + "&t=" + new Date().getTime() 
-            : sheetCSVUrl + "?t=" + new Date().getTime();
-
+        const finalUrl = sheetCSVUrl.includes('?') ? sheetCSVUrl + "&t=" + new Date().getTime() : sheetCSVUrl + "?t=" + new Date().getTime();
         const response = await fetch(finalUrl);
         if (!response.ok) throw new Error(`Bağlantı hatası: ${response.status}`);
-        
         const data = await response.text();
         parseCSV(data);
         updateStatus();
-    } catch (error) {
-        console.error("Veri çekilmedi:", error);
-    }
+    } catch (error) { console.error("Veri çekilmedi:", error); }
 }
 
 function parseCSV(csvText) {
@@ -73,7 +67,7 @@ function parseCSV(csvText) {
     people = Object.values(peopleObj);
 }
 
-// --- KONUMLARI DİNLE (Ekranda 1 Saat Görünür) ---
+// --- KONUMLARI DİNLE (1 Saatte Silinir) ---
 function listenToLocations() {
     db.collection("locations").onSnapshot((querySnapshot) => {
         activeLocations = {}; 
@@ -106,9 +100,7 @@ function updateStatus() {
     atSchoolList.innerHTML = ''; notAtSchoolList.innerHTML = '';
 
     people.forEach(person => {
-        let isAtSchool = false; 
-        let currentLesson = "";
-        
+        let isAtSchool = false; let currentLesson = "";
         const todaySchedule = person.schedule[currentDay];
         if (todaySchedule) {
             for (let slot of todaySchedule) {
@@ -125,105 +117,108 @@ function updateStatus() {
         card.className = isAtSchool ? 'person-card' : 'person-card offline-card';
         card.onclick = () => showScheduleModal(person);
         
-        let cardInnerHTML = `
-            <div class="card-top">
-                <span class="person-name">${person.name}</span>
-                <span class="click-hint">Tıkla ve Gör</span>
-            </div>`;
-
-        if (manualLoc) {
-            cardInnerHTML += `<div class="manual-loc-info"><span style="font-size: 16px;">📍</span> Nerede: ${manualLoc}</div>`;
-        } else if (isAtSchool) {
-            cardInnerHTML += `<div class="lesson-info"><span style="font-size: 16px;">📖</span> Derste: ${currentLesson}</div>`;
-        }
+        let cardInnerHTML = `<div class="card-top"><span class="person-name">${person.name}</span><span class="click-hint">Tıkla ve Gör</span></div>`;
+        if (manualLoc) cardInnerHTML += `<div class="manual-loc-info"><span style="font-size: 16px;">📍</span> Nerede: ${manualLoc}</div>`;
+        else if (isAtSchool) cardInnerHTML += `<div class="lesson-info"><span style="font-size: 16px;">📖</span> Derste: ${currentLesson}</div>`;
 
         card.innerHTML = cardInnerHTML;
-
         if (isAtSchool) atSchoolList.appendChild(card);
         else notAtSchoolList.appendChild(card);
     });
 }
 setInterval(fetchScheduleData, 60000);
 
-// --- KAMPÜS DUVARI MANTIĞI (Ekranda 1 Saat Görünür) ---
+// --- KAMPÜS DUVARI MANTIĞI (1 Saatte Silinir) ---
 function listenToWall() {
     const wallMessages = document.getElementById('wall-messages');
-    
-    db.collection("notes").orderBy("timestamp", "desc").limit(50)
-    .onSnapshot((querySnapshot) => {
+    db.collection("notes").orderBy("timestamp", "desc").limit(50).onSnapshot((querySnapshot) => {
         wallMessages.innerHTML = ""; 
-        if(querySnapshot.empty) {
-            wallMessages.innerHTML = "<div class='loading-text'>Sessizlik hakim. İlk mesajı sen yaz!</div>";
-            return;
-        }
+        if(querySnapshot.empty) { wallMessages.innerHTML = "<div class='loading-text'>Sessizlik hakim. İlk mesajı sen yaz!</div>"; return; }
 
-        let validMessageCount = 0;
-        const now = new Date();
-        const oneHourInMs = 1 * 60 * 60 * 1000;
+        let validCount = 0; const now = new Date(); const oneHourInMs = 1 * 60 * 60 * 1000;
 
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             if(data.timestamp) {
                 const msgDate = data.timestamp.toDate();
                 if (now - msgDate > oneHourInMs) return; 
-                validMessageCount++;
-
-                const h = String(msgDate.getHours()).padStart(2, '0');
-                const m = String(msgDate.getMinutes()).padStart(2, '0');
+                validCount++;
+                const h = String(msgDate.getHours()).padStart(2, '0'); const m = String(msgDate.getMinutes()).padStart(2, '0');
                 
-                const msgHTML = `
+                wallMessages.insertAdjacentHTML('beforeend', `
                     <div class="message-card">
-                        <div class="msg-header">
-                            <span class="msg-name">${data.name}</span>
-                            <span class="msg-time">${h}:${m}</span>
-                        </div>
+                        <div class="msg-header"><span class="msg-name">${data.name}</span><span class="msg-time">${h}:${m}</span></div>
                         <p class="msg-text">${data.message}</p>
-                    </div>`;
-                wallMessages.insertAdjacentHTML('beforeend', msgHTML);
+                    </div>`);
             }
         });
-
-        if (validMessageCount === 0) {
-            wallMessages.innerHTML = "<div class='loading-text'>Son 1 saatte hiç mesaj atılmadı.</div>";
-        }
+        if (validCount === 0) wallMessages.innerHTML = "<div class='loading-text'>Son 1 saatte hiç mesaj atılmadı.</div>";
     });
 }
 
 function sendNote() {
-    const nameInput = document.getElementById('sender-name');
-    const messageInput = document.getElementById('message-text');
-    const nameStr = nameInput.value.trim();
-    const messageStr = messageInput.value.trim();
-
+    const nameStr = document.getElementById('sender-name').value.trim();
+    const messageStr = document.getElementById('message-text').value.trim();
     if(nameStr === "" || messageStr === "") return;
 
     localStorage.setItem("campusUserName", nameStr);
-    db.collection("notes").add({
-        name: nameStr, message: messageStr, timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(() => { messageInput.value = ""; }).catch(err => console.error("Hata:", err));
+    db.collection("notes").add({ name: nameStr, message: messageStr, timestamp: firebase.firestore.FieldValue.serverTimestamp() })
+    .then(() => { document.getElementById('message-text').value = ""; }).catch(err => console.error(err));
 }
 function handleKeyPress(e) { if(e.key === 'Enter') sendNote(); }
 
-// --- MODAL VE HIZLI KONUM BUTONLARI ---
-const modal = document.getElementById('schedule-modal');
-const closeModalBtn = document.getElementById('close-modal');
+// --- YENİ: SABİT NOTLAR (NOTEPAD) MANTIĞI (Asla Silinmez) ---
+function listenToNotepad() {
+    const notepadList = document.getElementById('notepad-list');
+    db.collection("persistent_notes").orderBy("timestamp", "asc").onSnapshot((querySnapshot) => {
+        notepadList.innerHTML = ""; 
+        if(querySnapshot.empty) { notepadList.innerHTML = "<div class='loading-text'>Henüz önemli bir not eklenmemiş.</div>"; return; }
 
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            let dateStr = "";
+            if(data.timestamp) {
+                const date = data.timestamp.toDate();
+                const d = String(date.getDate()).padStart(2, '0'); const mo = String(date.getMonth() + 1).padStart(2, '0');
+                const h = String(date.getHours()).padStart(2, '0'); const m = String(date.getMinutes()).padStart(2, '0');
+                dateStr = `${d}/${mo} ${h}:${m}`;
+            }
+            
+            notepadList.insertAdjacentHTML('beforeend', `
+                <div class="message-card" style="border-left: 3px solid #f59e0b; background: #0f172a;">
+                    <div class="msg-header"><span class="msg-name" style="color: #f59e0b;">${data.name}</span><span class="msg-time">${dateStr}</span></div>
+                    <p class="msg-text">${data.message}</p>
+                </div>`);
+        });
+        notepadList.scrollTop = notepadList.scrollHeight; // Hep en alta kaydır
+    });
+}
+
+document.getElementById('add-notepad-btn').onclick = () => {
+    const msgInput = document.getElementById('notepad-input');
+    const messageStr = msgInput.value.trim();
+    let nameStr = localStorage.getItem("campusUserName") || document.getElementById('sender-name').value.trim() || "Anonim";
+    if(messageStr === "") return;
+
+    db.collection("persistent_notes").add({ name: nameStr, message: messageStr, timestamp: firebase.firestore.FieldValue.serverTimestamp() })
+    .then(() => { msgInput.value = ""; }).catch(err => console.error(err));
+};
+
+// --- MODAL (AÇILIR PENCERE) KONTROLLERİ ---
+const scheduleModal = document.getElementById('schedule-modal');
+const notepadModal = document.getElementById('notepad-modal');
+
+// Ders Programı Modalı
 function showScheduleModal(person) {
     document.getElementById('modal-name').innerText = person.name;
     const scheduleContainer = document.getElementById('modal-schedule-list');
     scheduleContainer.innerHTML = '';
     
-    // Konum Güncelleme Fonksiyonu
     const updateLoc = (locVal) => {
-        db.collection("locations").doc(person.name).set({
-            location: locVal,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        }).then(() => {
-            modal.classList.remove('active');
-        }).catch(err => alert("Bağlantı hatası: " + err));
+        db.collection("locations").doc(person.name).set({ location: locVal, timestamp: firebase.firestore.FieldValue.serverTimestamp() })
+        .then(() => { scheduleModal.classList.remove('active'); }).catch(err => alert("Hata: " + err));
     };
 
-    // Buton Görevleri
     document.getElementById('loc-btn-podyum').onclick = () => updateLoc('Podyum');
     document.getElementById('loc-btn-kantin').onclick = () => updateLoc('Kantin');
     document.getElementById('loc-btn-ring').onclick = () => updateLoc('Ring');
@@ -234,38 +229,33 @@ function showScheduleModal(person) {
             hasAnyClass = true;
             const sortedClasses = person.schedule[i].sort((a, b) => a.start.localeCompare(b.start));
             let dayHTML = `<div class="schedule-day"><div class="day-title">${dayNames[i]}</div>`;
-            sortedClasses.forEach(cls => {
-                dayHTML += `<div class="day-class"><span class="class-time">${cls.start} - ${cls.end}</span><span class="class-name">${cls.lesson}</span></div>`;
-            });
+            sortedClasses.forEach(cls => { dayHTML += `<div class="day-class"><span class="class-time">${cls.start} - ${cls.end}</span><span class="class-name">${cls.lesson}</span></div>`; });
             dayHTML += `</div>`;
             scheduleContainer.innerHTML += dayHTML;
         }
     }
     if(!hasAnyClass) scheduleContainer.innerHTML = '<div class="no-class">Sisteme kayıtlı ders bulunamadı.</div>';
-    modal.classList.add('active');
+    scheduleModal.classList.add('active');
 }
 
-closeModalBtn.onclick = () => modal.classList.remove('active');
-window.onclick = (event) => { if (event.target == modal) modal.classList.remove('active'); }
+// Kapatma Tuşları ve Boşluğa Tıklama
+document.getElementById('close-modal').onclick = () => scheduleModal.classList.remove('active');
+document.getElementById('open-notepad-btn').onclick = () => notepadModal.classList.add('active');
+document.getElementById('close-notepad-btn').onclick = () => notepadModal.classList.remove('active');
+
+window.onclick = (event) => { 
+    if (event.target == scheduleModal) scheduleModal.classList.remove('active'); 
+    if (event.target == notepadModal) notepadModal.classList.remove('active'); 
+}
 
 // --- 5. OTOMATİK VERİTABANI TEMİZLİĞİ (GÖRÜNMEZ ÇÖPÇÜ) ---
 function cleanOldData() {
-    // 3 günün milisaniye karşılığı
     const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-
-    // 1. Eski Mesajları Bul ve Sil
-    db.collection("notes").where("timestamp", "<", threeDaysAgo).get()
-    .then((snapshot) => {
-        snapshot.forEach((doc) => {
-            db.collection("notes").doc(doc.id).delete();
-        });
-    }).catch(err => console.log("Mesaj temizlik hatası:", err));
-
-    // 2. Eski Konumları Bul ve Sil
-    db.collection("locations").where("timestamp", "<", threeDaysAgo).get()
-    .then((snapshot) => {
-        snapshot.forEach((doc) => {
-            db.collection("locations").doc(doc.id).delete();
-        });
-    }).catch(err => console.log("Konum temizlik hatası:", err));
+    // Sadece notes ve locations temizlenir. "persistent_notes" (Notepad) güvendedir!
+    db.collection("notes").where("timestamp", "<", threeDaysAgo).get().then((snapshot) => {
+        snapshot.forEach((doc) => { db.collection("notes").doc(doc.id).delete(); });
+    });
+    db.collection("locations").where("timestamp", "<", threeDaysAgo).get().then((snapshot) => {
+        snapshot.forEach((doc) => { db.collection("locations").doc(doc.id).delete(); });
+    });
 }
