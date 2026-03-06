@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Radar v2</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-area">
+                <h1>Campus Radar</h1>
+                <span class="version-tag">PRO</span>
+            </div>
+            <div class="datetime-badge" id="datetime-display">Yükleniyor...</div>
+        </header>
+
+        <div class="main-layout">
+            <div class="dashboard">
+                <div class="status-column">
+                    <div class="column-header">
+                        <div class="dot online-dot"></div>
+                        <h2>Şu An Okulda</h2>
+                    </div>
+                    <div id="at-school-list" class="card-grid"></div>
+                </div>
+
+                <div class="status-column mt-gap">
+                    <div class="column-header">
+                        <div class="dot offline-dot"></div>
+                        <h2>Okulda Olmayanlar</h2>
+                    </div>
+                    <div id="not-at-school-list" class="card-grid"></div>
+                </div>
+            </div>
+
+            <div class="campus-wall">
+                <div class="wall-header">
+                    <div class="column-header" style="margin: 0;">
+                        <div class="dot live-dot"></div>
+                        <h2>Kampüs Duvarı</h2>
+                    </div>
+                    <span class="live-status">Canlı</span>
+                </div>
+                
+                <div class="wall-messages" id="wall-messages">
+                    <div class="loading-text">Duvar yükleniyor...</div>
+                </div>
+
+                <div class="wall-input-area">
+                    <input type="text" id="sender-name" class="input-name" placeholder="İsminiz..." autocomplete="off">
+                    <div class="input-group">
+                        <input type="text" id="message-text" class="input-msg" placeholder="Durum bildir veya not yaz..." autocomplete="off" onkeypress="handleKeyPress(event)">
+                        <button id="send-btn" class="send-btn" onclick="sendNote()">
+                            <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>Designed & Coded with 🤍 by <span class="brand">zodia3x</span></p>
+        </footer>
+    </div>
+
+    <div id="schedule-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="close-modal" class="close-btn">&times;</button>
+            <div class="modal-header">
+                <h2 id="modal-name">İsim Soyisim</h2>
+                <p>Haftalık Ders Programı</p>
+            </div>
+            <div id="modal-schedule-list" class="schedule-container"></div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    
+    <script src="script.js"></script>
+</body>
+</html>
