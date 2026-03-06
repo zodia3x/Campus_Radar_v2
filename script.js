@@ -13,7 +13,7 @@ const db = firebase.firestore();
 
 // --- 2. GOOGLE SHEETS BAĞLANTISI ---
 // AŞAĞIDAKİ LİNKİ KENDİ GOOGLE SHEETS CSV LİNKİNLE DEĞİŞTİR:
-const sheetCSVUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ15L7k0B1pgvq_XWBMvvIBd8Qz-Y-4BY9pQDtCpGtdeqzZ_m-vX7m3_38WL6S5aKO6t0DRVCZXOtdK/pub?output=csv";
+const sheetCSVUrl = "BURAYA_KOPYALADIGIN_CSV_LINKINI_YAPISTIR";
 
 let people = [];
 const dayNames = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
@@ -22,22 +22,23 @@ window.onload = () => {
     fetchScheduleData();
     listenToWall();
 
-    // İsim Hatırlama Özelliği - Sayfa açıldığında hafızayı kontrol et
+    // İsim Hatırlama
     const savedName = localStorage.getItem("campusUserName");
     if (savedName) {
         document.getElementById("sender-name").value = savedName;
     }
 };
 
-// GÜÇLENDİRİLMİŞ VE ÖNBELLEK KIRICI VERİ ÇEKME FONKSİYONU
+// CORS HATASINA TAKILMAYAN, GÜVENLİ ÖNBELLEK KIRICI
 async function fetchScheduleData() {
     try {
-        // Sonuna rastgele sayı ekleyerek telefonun eski veriyi kullanmasını engelliyoruz
+        // Sadece URL'yi değiştirerek önbelleği kırıyoruz (Google bunu tehdit sanmaz)
         const finalUrl = sheetCSVUrl.includes('?') 
             ? sheetCSVUrl + "&t=" + new Date().getTime() 
             : sheetCSVUrl + "?t=" + new Date().getTime();
 
-        const response = await fetch(finalUrl, { cache: "no-store" });
+        // { cache: "no-store" } emrini kaldırdık!
+        const response = await fetch(finalUrl);
         
         if (!response.ok) {
             throw new Error(`Bağlantı hatası: ${response.status}`);
@@ -48,14 +49,13 @@ async function fetchScheduleData() {
         updateStatus();
         
     } catch (error) {
-        // Telefonda hatanın ne olduğunu görebilmek için ekrana basıyoruz
         console.error("Veri çekilmedi:", error);
         const atSchoolList = document.getElementById('at-school-list');
         atSchoolList.innerHTML = `
             <div style="color: #ef4444; padding: 15px; background: rgba(239,68,68,0.1); border-radius: 10px; font-size: 13px; text-align: center;">
                 <strong>Veri Çekilemedi!</strong><br>
-                Hata: ${error.message}<br><br>
-                Lütfen Google Sheets linkini kontrol et veya gizli sekmeden girmeyi dene.
+                Google Sheets Linkini koda yapıştırdığından emin ol.<br>
+                Hata: ${error.message}
             </div>`;
     }
 }
@@ -141,4 +141,97 @@ function listenToWall() {
         wallMessages.innerHTML = ""; 
         
         if(querySnapshot.empty) {
-            wall
+            wallMessages.innerHTML = "<div class='loading-text'>Sessizlik hakim. İlk mesajı sen yaz!</div>";
+            return;
+        }
+
+        let validMessageCount = 0;
+        const now = new Date();
+        const twoHoursInMs = 2 * 60 * 60 * 1000; 
+
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            
+            if(data.timestamp) {
+                const msgDate = data.timestamp.toDate();
+                
+                if (now - msgDate > twoHoursInMs) return; 
+                
+                validMessageCount++;
+
+                const h = String(msgDate.getHours()).padStart(2, '0');
+                const m = String(msgDate.getMinutes()).padStart(2, '0');
+                const timeString = `${h}:${m}`;
+
+                const msgHTML = `
+                    <div class="message-card">
+                        <div class="msg-header">
+                            <span class="msg-name">${data.name}</span>
+                            <span class="msg-time">${timeString}</span>
+                        </div>
+                        <p class="msg-text">${data.message}</p>
+                    </div>
+                `;
+                wallMessages.insertAdjacentHTML('beforeend', msgHTML);
+            }
+        });
+
+        if (validMessageCount === 0) {
+            wallMessages.innerHTML = "<div class='loading-text'>Son 2 saatte hiç mesaj atılmadı.</div>";
+        }
+    });
+}
+
+function sendNote() {
+    const nameInput = document.getElementById('sender-name');
+    const messageInput = document.getElementById('message-text');
+    const nameStr = nameInput.value.trim();
+    const messageStr = messageInput.value.trim();
+
+    if(nameStr === "" || messageStr === "") return;
+
+    localStorage.setItem("campusUserName", nameStr);
+
+    db.collection("notes").add({
+        name: nameStr,
+        message: messageStr,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => {
+        messageInput.value = ""; 
+    }).catch((error) => console.error("Hata:", error));
+}
+
+function handleKeyPress(e) {
+    if(e.key === 'Enter') {
+        sendNote();
+    }
+}
+
+// --- 4. MODAL KONTROLLERİ ---
+const modal = document.getElementById('schedule-modal');
+const closeModalBtn = document.getElementById('close-modal');
+
+function showScheduleModal(person) {
+    document.getElementById('modal-name').innerText = person.name;
+    const scheduleContainer = document.getElementById('modal-schedule-list');
+    scheduleContainer.innerHTML = '';
+    let hasAnyClass = false;
+
+    for(let i=1; i<=5; i++) {
+        if(person.schedule[i] && person.schedule[i].length > 0) {
+            hasAnyClass = true;
+            const sortedClasses = person.schedule[i].sort((a, b) => a.start.localeCompare(b.start));
+            let dayHTML = `<div class="schedule-day"><div class="day-title">${dayNames[i]}</div>`;
+            sortedClasses.forEach(cls => {
+                dayHTML += `<div class="day-class"><span class="class-time">${cls.start} - ${cls.end}</span><span class="class-name">${cls.lesson}</span></div>`;
+            });
+            dayHTML += `</div>`;
+            scheduleContainer.innerHTML += dayHTML;
+        }
+    }
+    if(!hasAnyClass) scheduleContainer.innerHTML = '<div class="no-class">Sisteme kayıtlı ders bulunamadı.</div>';
+    modal.classList.add('active');
+}
+
+closeModalBtn.onclick = () => modal.classList.remove('active');
+window.onclick = (event) => { if (event.target == modal) modal.classList.remove('active'); }
