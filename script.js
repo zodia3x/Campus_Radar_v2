@@ -16,47 +16,32 @@ const db = firebase.firestore();
 const sheetCSVUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ15L7k0B1pgvq_XWBMvvIBd8Qz-Y-4BY9pQDtCpGtdeqzZ_m-vX7m3_38WL6S5aKO6t0DRVCZXOtdK/pub?output=csv";
 
 let people = [];
+let activeLocations = {}; 
 const dayNames = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
 
 window.onload = () => {
     fetchScheduleData();
     listenToWall();
+    listenToLocations(); 
 
-    // İsim Hatırlama
     const savedName = localStorage.getItem("campusUserName");
-    if (savedName) {
-        document.getElementById("sender-name").value = savedName;
-    }
+    if (savedName) document.getElementById("sender-name").value = savedName;
 };
 
-// CORS HATASINA TAKILMAYAN, GÜVENLİ ÖNBELLEK KIRICI
 async function fetchScheduleData() {
     try {
-        // Sadece URL'yi değiştirerek önbelleği kırıyoruz (Google bunu tehdit sanmaz)
         const finalUrl = sheetCSVUrl.includes('?') 
             ? sheetCSVUrl + "&t=" + new Date().getTime() 
             : sheetCSVUrl + "?t=" + new Date().getTime();
 
-        // { cache: "no-store" } emrini kaldırdık!
         const response = await fetch(finalUrl);
-        
-        if (!response.ok) {
-            throw new Error(`Bağlantı hatası: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`Bağlantı hatası: ${response.status}`);
         
         const data = await response.text();
         parseCSV(data);
         updateStatus();
-        
     } catch (error) {
         console.error("Veri çekilmedi:", error);
-        const atSchoolList = document.getElementById('at-school-list');
-        atSchoolList.innerHTML = `
-            <div style="color: #ef4444; padding: 15px; background: rgba(239,68,68,0.1); border-radius: 10px; font-size: 13px; text-align: center;">
-                <strong>Veri Çekilemedi!</strong><br>
-                Google Sheets Linkini koda yapıştırdığından emin ol.<br>
-                Hata: ${error.message}
-            </div>`;
     }
 }
 
@@ -87,6 +72,26 @@ function parseCSV(csvText) {
     people = Object.values(peopleObj);
 }
 
+// --- KONUMLARI DİNLE (1 SAATTE SİLİNİR) ---
+function listenToLocations() {
+    db.collection("locations").onSnapshot((querySnapshot) => {
+        activeLocations = {}; 
+        const now = new Date();
+        const oneHourInMs = 1 * 60 * 60 * 1000;
+
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            if(data.timestamp) {
+                const locDate = data.timestamp.toDate();
+                if (now - locDate < oneHourInMs) {
+                    activeLocations[doc.id] = data.location;
+                }
+            }
+        });
+        updateStatus(); 
+    });
+}
+
 function updateStatus() {
     const now = new Date();
     const currentDay = now.getDay();
@@ -100,7 +105,9 @@ function updateStatus() {
     atSchoolList.innerHTML = ''; notAtSchoolList.innerHTML = '';
 
     people.forEach(person => {
-        let isAtSchool = false; let currentLesson = "";
+        let isAtSchool = false; 
+        let currentLesson = "";
+        
         const todaySchedule = person.schedule[currentDay];
         if (todaySchedule) {
             for (let slot of todaySchedule) {
@@ -109,6 +116,9 @@ function updateStatus() {
                 }
             }
         }
+
+        const manualLoc = activeLocations[person.name];
+        if (manualLoc) isAtSchool = true;
 
         const card = document.createElement('div');
         card.className = isAtSchool ? 'person-card' : 'person-card offline-card';
@@ -120,26 +130,27 @@ function updateStatus() {
                 <span class="click-hint">Tıkla ve Gör</span>
             </div>`;
 
-        if (isAtSchool) {
-            cardInnerHTML += `<div class="lesson-info"><span style="font-size: 16px;">📖</span> ${currentLesson}</div>`;
-            card.innerHTML = cardInnerHTML;
-            atSchoolList.appendChild(card);
-        } else {
-            card.innerHTML = cardInnerHTML;
-            notAtSchoolList.appendChild(card);
+        if (manualLoc) {
+            cardInnerHTML += `<div class="manual-loc-info"><span style="font-size: 16px;">📍</span> Nerede: ${manualLoc}</div>`;
+        } else if (isAtSchool) {
+            cardInnerHTML += `<div class="lesson-info"><span style="font-size: 16px;">📖</span> Derste: ${currentLesson}</div>`;
         }
+
+        card.innerHTML = cardInnerHTML;
+
+        if (isAtSchool) atSchoolList.appendChild(card);
+        else notAtSchoolList.appendChild(card);
     });
 }
 setInterval(fetchScheduleData, 60000);
 
-// --- 3. KAMPÜS DUVARI MANTIĞI ---
+// --- KAMPÜS DUVARI MANTIĞI (1 SAATTE SİLİNİR) ---
 function listenToWall() {
     const wallMessages = document.getElementById('wall-messages');
     
     db.collection("notes").orderBy("timestamp", "desc").limit(50)
     .onSnapshot((querySnapshot) => {
         wallMessages.innerHTML = ""; 
-        
         if(querySnapshot.empty) {
             wallMessages.innerHTML = "<div class='loading-text'>Sessizlik hakim. İlk mesajı sen yaz!</div>";
             return;
@@ -147,37 +158,32 @@ function listenToWall() {
 
         let validMessageCount = 0;
         const now = new Date();
-        const twoHoursInMs = 2 * 60 * 60 * 1000; 
+        const oneHourInMs = 1 * 60 * 60 * 1000;
 
         querySnapshot.forEach((doc) => {
             const data = doc.data();
-            
             if(data.timestamp) {
                 const msgDate = data.timestamp.toDate();
-                
-                if (now - msgDate > twoHoursInMs) return; 
-                
+                if (now - msgDate > oneHourInMs) return; 
                 validMessageCount++;
 
                 const h = String(msgDate.getHours()).padStart(2, '0');
                 const m = String(msgDate.getMinutes()).padStart(2, '0');
-                const timeString = `${h}:${m}`;
-
+                
                 const msgHTML = `
                     <div class="message-card">
                         <div class="msg-header">
                             <span class="msg-name">${data.name}</span>
-                            <span class="msg-time">${timeString}</span>
+                            <span class="msg-time">${h}:${m}</span>
                         </div>
                         <p class="msg-text">${data.message}</p>
-                    </div>
-                `;
+                    </div>`;
                 wallMessages.insertAdjacentHTML('beforeend', msgHTML);
             }
         });
 
         if (validMessageCount === 0) {
-            wallMessages.innerHTML = "<div class='loading-text'>Son 2 saatte hiç mesaj atılmadı.</div>";
+            wallMessages.innerHTML = "<div class='loading-text'>Son 1 saatte hiç mesaj atılmadı.</div>";
         }
     });
 }
@@ -191,23 +197,13 @@ function sendNote() {
     if(nameStr === "" || messageStr === "") return;
 
     localStorage.setItem("campusUserName", nameStr);
-
     db.collection("notes").add({
-        name: nameStr,
-        message: messageStr,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(() => {
-        messageInput.value = ""; 
-    }).catch((error) => console.error("Hata:", error));
+        name: nameStr, message: messageStr, timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    }).then(() => { messageInput.value = ""; }).catch(err => console.error("Hata:", err));
 }
+function handleKeyPress(e) { if(e.key === 'Enter') sendNote(); }
 
-function handleKeyPress(e) {
-    if(e.key === 'Enter') {
-        sendNote();
-    }
-}
-
-// --- 4. MODAL KONTROLLERİ ---
+// --- MODAL VE HIZLI KONUM BUTONLARI ---
 const modal = document.getElementById('schedule-modal');
 const closeModalBtn = document.getElementById('close-modal');
 
@@ -215,8 +211,23 @@ function showScheduleModal(person) {
     document.getElementById('modal-name').innerText = person.name;
     const scheduleContainer = document.getElementById('modal-schedule-list');
     scheduleContainer.innerHTML = '';
-    let hasAnyClass = false;
+    
+    // Konum Güncelleme Fonksiyonu
+    const updateLoc = (locVal) => {
+        db.collection("locations").doc(person.name).set({
+            location: locVal,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(() => {
+            modal.classList.remove('active');
+        }).catch(err => alert("Bağlantı hatası: " + err));
+    };
 
+    // Buton Görevleri
+    document.getElementById('loc-btn-podyum').onclick = () => updateLoc('Podyum');
+    document.getElementById('loc-btn-kantin').onclick = () => updateLoc('Kantin');
+    document.getElementById('loc-btn-ring').onclick = () => updateLoc('Ring');
+
+    let hasAnyClass = false;
     for(let i=1; i<=5; i++) {
         if(person.schedule[i] && person.schedule[i].length > 0) {
             hasAnyClass = true;
