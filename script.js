@@ -12,8 +12,8 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // --- 2. GOOGLE SHEETS BAĞLANTISI ---
-
-const sheetCSVUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQ15L7k0B1pgvq_XWBMvvIBd8Qz-Y-4BY9pQDtCpGtdeqzZ_m-vX7m3_38WL6S5aKO6t0DRVCZXOtdK/pub?output=csv";
+// AŞAĞIDAKİ LİNKİ KENDİ GOOGLE SHEETS CSV LİNKİNLE DEĞİŞTİR:
+const sheetCSVUrl = "BURAYA_KOPYALADIGIN_CSV_LINKINI_YAPISTIR";
 
 let people = [];
 const dayNames = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
@@ -21,6 +21,12 @@ const dayNames = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cum
 window.onload = () => {
     fetchScheduleData();
     listenToWall();
+
+    // YENİ: İsim Hatırlama Özelliği - Sayfa açıldığında hafızayı kontrol et
+    const savedName = localStorage.getItem("campusUserName");
+    if (savedName) {
+        document.getElementById("sender-name").value = savedName;
+    }
 };
 
 async function fetchScheduleData() {
@@ -110,7 +116,6 @@ setInterval(fetchScheduleData, 60000);
 function listenToWall() {
     const wallMessages = document.getElementById('wall-messages');
     
-    // Mesajları zamana göre sıralı getir (en yeni en üstte)
     db.collection("notes").orderBy("timestamp", "desc").limit(50)
     .onSnapshot((querySnapshot) => {
         wallMessages.innerHTML = ""; 
@@ -120,27 +125,44 @@ function listenToWall() {
             return;
         }
 
+        let validMessageCount = 0;
+        const now = new Date();
+        const twoHoursInMs = 2 * 60 * 60 * 1000; // 2 saatin milisaniye karşılığı
+
         querySnapshot.forEach((doc) => {
             const data = doc.data();
-            let timeString = "Az önce";
+            
             if(data.timestamp) {
-                const date = data.timestamp.toDate();
-                const h = String(date.getHours()).padStart(2, '0');
-                const m = String(date.getMinutes()).padStart(2, '0');
-                timeString = `${h}:${m}`;
-            }
+                const msgDate = data.timestamp.toDate();
+                
+                // YENİ: Otomatik Temizlik - Eğer mesaj 2 saatten eskiyse ekrana çizme!
+                if (now - msgDate > twoHoursInMs) {
+                    return; // Bu mesajı atla
+                }
+                
+                validMessageCount++;
 
-            const msgHTML = `
-                <div class="message-card">
-                    <div class="msg-header">
-                        <span class="msg-name">${data.name}</span>
-                        <span class="msg-time">${timeString}</span>
+                const h = String(msgDate.getHours()).padStart(2, '0');
+                const m = String(msgDate.getMinutes()).padStart(2, '0');
+                const timeString = `${h}:${m}`;
+
+                const msgHTML = `
+                    <div class="message-card">
+                        <div class="msg-header">
+                            <span class="msg-name">${data.name}</span>
+                            <span class="msg-time">${timeString}</span>
+                        </div>
+                        <p class="msg-text">${data.message}</p>
                     </div>
-                    <p class="msg-text">${data.message}</p>
-                </div>
-            `;
-            wallMessages.insertAdjacentHTML('beforeend', msgHTML);
+                `;
+                wallMessages.insertAdjacentHTML('beforeend', msgHTML);
+            }
         });
+
+        // Eğer mesajlar var ama hepsi 2 saatten eskiyse (ekran boş kalmasın diye)
+        if (validMessageCount === 0) {
+            wallMessages.innerHTML = "<div class='loading-text'>Son 2 saatte hiç mesaj atılmadı.</div>";
+        }
     });
 }
 
@@ -152,16 +174,18 @@ function sendNote() {
 
     if(nameStr === "" || messageStr === "") return;
 
+    // YENİ: İsim Hatırlama - Başarıyla mesaj atınca ismi tarayıcıya kaydet
+    localStorage.setItem("campusUserName", nameStr);
+
     db.collection("notes").add({
         name: nameStr,
         message: messageStr,
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
     }).then(() => {
-        messageInput.value = ""; // Gönderince sadece mesajı temizle, isimi tut
+        messageInput.value = ""; // Sadece mesajı sil, isim kalsın
     }).catch((error) => console.error("Hata:", error));
 }
 
-// Enter tuşuna basınca gönderme özelliği
 function handleKeyPress(e) {
     if(e.key === 'Enter') {
         sendNote();
