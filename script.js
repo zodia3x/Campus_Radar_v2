@@ -23,6 +23,7 @@ window.onload = () => {
     fetchScheduleData();
     listenToWall();
     listenToLocations(); 
+    cleanOldData(); // Otomatik temizleyiciyi çalıştır
 
     const savedName = localStorage.getItem("campusUserName");
     if (savedName) document.getElementById("sender-name").value = savedName;
@@ -72,7 +73,7 @@ function parseCSV(csvText) {
     people = Object.values(peopleObj);
 }
 
-// --- KONUMLARI DİNLE (1 SAATTE SİLİNİR) ---
+// --- KONUMLARI DİNLE (Ekranda 1 Saat Görünür) ---
 function listenToLocations() {
     db.collection("locations").onSnapshot((querySnapshot) => {
         activeLocations = {}; 
@@ -144,7 +145,7 @@ function updateStatus() {
 }
 setInterval(fetchScheduleData, 60000);
 
-// --- KAMPÜS DUVARI MANTIĞI (1 SAATTE SİLİNİR) ---
+// --- KAMPÜS DUVARI MANTIĞI (Ekranda 1 Saat Görünür) ---
 function listenToWall() {
     const wallMessages = document.getElementById('wall-messages');
     
@@ -246,3 +247,25 @@ function showScheduleModal(person) {
 
 closeModalBtn.onclick = () => modal.classList.remove('active');
 window.onclick = (event) => { if (event.target == modal) modal.classList.remove('active'); }
+
+// --- 5. OTOMATİK VERİTABANI TEMİZLİĞİ (GÖRÜNMEZ ÇÖPÇÜ) ---
+function cleanOldData() {
+    // 3 günün milisaniye karşılığı
+    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+
+    // 1. Eski Mesajları Bul ve Sil
+    db.collection("notes").where("timestamp", "<", threeDaysAgo).get()
+    .then((snapshot) => {
+        snapshot.forEach((doc) => {
+            db.collection("notes").doc(doc.id).delete();
+        });
+    }).catch(err => console.log("Mesaj temizlik hatası:", err));
+
+    // 2. Eski Konumları Bul ve Sil
+    db.collection("locations").where("timestamp", "<", threeDaysAgo).get()
+    .then((snapshot) => {
+        snapshot.forEach((doc) => {
+            db.collection("locations").doc(doc.id).delete();
+        });
+    }).catch(err => console.log("Konum temizlik hatası:", err));
+}
