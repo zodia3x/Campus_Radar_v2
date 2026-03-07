@@ -1,6 +1,5 @@
 // --- 1. FIREBASE BAĞLANTISI ---
 const firebaseConfig = {
-    apiKey: "AIzaSyCOWkk_9_dfmitVWbDhAVHsU9uIXeCuZPM",
     authDomain: "campus-radar-v2-eedf6.firebaseapp.com",
     projectId: "campus-radar-v2-eedf6",
     storageBucket: "campus-radar-v2-eedf6.firebasestorage.app",
@@ -222,6 +221,10 @@ function showScheduleModal(person) {
     document.getElementById('loc-btn-podyum').onclick = () => updateLoc('Podyum');
     document.getElementById('loc-btn-kantin').onclick = () => updateLoc('Kantin');
     document.getElementById('loc-btn-ring').onclick = () => updateLoc('Ring');
+    document.getElementById('loc-btn-sigara').onclick = () => updateLoc('Kantin Arkası 🚬');
+    document.getElementById('loc-btn-carsi').onclick = () => updateLoc('Çarşıda');
+    document.getElementById('loc-btn-bilardo').onclick = () => updateLoc('Yab. Dil. Bilardo 🎱');
+    document.getElementById('loc-btn-yemekhane').onclick = () => updateLoc('Yemekhane 🍽️');
 
     let hasAnyClass = false;
     for(let i=1; i<=5; i++) {
