@@ -222,7 +222,7 @@ function showScheduleModal(person) {
     document.getElementById('loc-btn-kantin').onclick = () => updateLoc('Kantin');
     document.getElementById('loc-btn-ring').onclick = () => updateLoc('Ring');
     document.getElementById('loc-btn-sigara').onclick = () => updateLoc('Kantin Arkası 🚬');
-    document.getElementById('loc-btn-carsi').onclick = () => updateLoc('Çarşıda');
+    document.getElementById('loc-btn-carsi').onclick = () => updateLoc('Çarşı');
     document.getElementById('loc-btn-bilardo').onclick = () => updateLoc('Yab. Dil. Bilardo 🎱');
     document.getElementById('loc-btn-yemekhane').onclick = () => updateLoc('Yemekhane 🍽️');
 
@@ -261,4 +261,5 @@ function cleanOldData() {
     db.collection("locations").where("timestamp", "<", threeDaysAgo).get().then((snapshot) => {
         snapshot.forEach((doc) => { db.collection("locations").doc(doc.id).delete(); });
     });
+
 }
