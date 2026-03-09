@@ -1,5 +1,6 @@
 // --- 1. FIREBASE BAĞLANTISI ---
 const firebaseConfig = {
+    apiKey: "AIzaSyCOWkk_9_dfmitVWbDhAVHsU9uIXeCuZPM",
     authDomain: "campus-radar-v2-eedf6.firebaseapp.com",
     projectId: "campus-radar-v2-eedf6",
     storageBucket: "campus-radar-v2-eedf6.firebasestorage.app",
@@ -21,9 +22,8 @@ window.onload = () => {
     fetchScheduleData();
     listenToWall();
     listenToLocations(); 
-    listenToNotepad(); // YENİ: Sabit notları dinle
-    cleanOldData();
-    updateExamCounter(); 
+    listenToNotepad(); 
+    updateExamCounter(); // Sınav sayacını başlat
 
     const savedName = localStorage.getItem("campusUserName");
     if (savedName) document.getElementById("sender-name").value = savedName;
@@ -72,13 +72,12 @@ function listenToLocations() {
     db.collection("locations").onSnapshot((querySnapshot) => {
         activeLocations = {}; 
         const now = new Date();
-        const fifteenMinsInMs = 15 * 60 * 1000; // 15 Dakika ayarı
+        const fifteenMinsInMs = 15 * 60 * 1000;
 
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             if(data.timestamp) {
                 const locDate = data.timestamp.toDate();
-                // Sadece son 15 dakika içindeki konumları geçerli say
                 if (now - locDate < fifteenMinsInMs) {
                     activeLocations[doc.id] = data.location;
                 }
@@ -119,7 +118,7 @@ function updateStatus() {
         card.onclick = () => showScheduleModal(person);
         
         let cardInnerHTML = `<div class="card-top"><span class="person-name">${person.name}</span><span class="click-hint">Tıkla ve Gör</span></div>`;
-        if (manualLoc) cardInnerHTML += `<div class="manual-loc-info"><span style="font-size: 16px;">📍</span> Nerede: ${manualLoc}</div>`;
+        if (manualLoc) cardInnerHTML += `<div class="lesson-info"><span style="font-size: 16px;">📍</span> Nerede: ${manualLoc}</div>`;
         else if (isAtSchool) cardInnerHTML += `<div class="lesson-info"><span style="font-size: 16px;">📖</span> Derste: ${currentLesson}</div>`;
 
         card.innerHTML = cardInnerHTML;
@@ -129,32 +128,23 @@ function updateStatus() {
 }
 setInterval(fetchScheduleData, 60000);
 
-// --- KAMPÜS DUVARI MANTIĞI (24 Saatte Silinir & WP Gibi Aşağı Akar) ---
+// --- KAMPÜS DUVARI MANTIĞI (24 Saat Geçerli & WP Gibi Tersten Akar) ---
 function listenToWall() {
     const wallMessages = document.getElementById('wall-messages');
     db.collection("notes").orderBy("timestamp", "desc").limit(50).onSnapshot((querySnapshot) => {
         wallMessages.innerHTML = ""; 
-        if(querySnapshot.empty) { 
-            wallMessages.innerHTML = "<div class='loading-text'>Sessizlik hakim. İlk mesajı sen yaz!</div>"; 
-            return; 
-        }
+        if(querySnapshot.empty) { wallMessages.innerHTML = "<div class='loading-text'>Sessizlik hakim. İlk mesajı sen yaz!</div>"; return; }
 
-        let validCount = 0; 
-        const now = new Date(); 
-        const twentyFourHoursInMs = 24 * 60 * 60 * 1000; // 24 Saat ayarı
+        let validCount = 0; const now = new Date(); const twentyFourHoursInMs = 24 * 60 * 60 * 1000;
 
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             if(data.timestamp) {
                 const msgDate = data.timestamp.toDate();
-                // 24 saatten eski mesajları ekranda gösterme
                 if (now - msgDate > twentyFourHoursInMs) return; 
                 validCount++;
+                const h = String(msgDate.getHours()).padStart(2, '0'); const m = String(msgDate.getMinutes()).padStart(2, '0');
                 
-                const h = String(msgDate.getHours()).padStart(2, '0'); 
-                const m = String(msgDate.getMinutes()).padStart(2, '0');
-                
-                // WP tarzı için 'afterbegin' kullanıyoruz (eski mesajlar üste, yeniler alta)
                 wallMessages.insertAdjacentHTML('afterbegin', `
                     <div class="message-card">
                         <div class="msg-header"><span class="msg-name">${data.name}</span><span class="msg-time">${h}:${m}</span></div>
@@ -162,17 +152,26 @@ function listenToWall() {
                     </div>`);
             }
         });
-        
         if (validCount === 0) {
             wallMessages.innerHTML = "<div class='loading-text'>Son 24 saatte hiç mesaj atılmadı.</div>";
         } else {
-            // Mesajlar eklendikten sonra WP gibi otomatik en alta kaydır
-            wallMessages.scrollTop = wallMessages.scrollHeight;
+            wallMessages.scrollTop = wallMessages.scrollHeight; // WP gibi aşağı kaydır
         }
     });
 }
 
-// --- YENİ: SABİT NOTLAR (NOTEPAD) MANTIĞI (Asla Silinmez) ---
+function sendNote() {
+    const nameStr = document.getElementById('sender-name').value.trim();
+    const messageStr = document.getElementById('message-text').value.trim();
+    if(nameStr === "" || messageStr === "") return;
+
+    localStorage.setItem("campusUserName", nameStr);
+    db.collection("notes").add({ name: nameStr, message: messageStr, timestamp: firebase.firestore.FieldValue.serverTimestamp() })
+    .then(() => { document.getElementById('message-text').value = ""; }).catch(err => console.error(err));
+}
+function handleKeyPress(e) { if(e.key === 'Enter') sendNote(); }
+
+// --- SABİT NOTLAR (NOTEPAD) ---
 function listenToNotepad() {
     const notepadList = document.getElementById('notepad-list');
     db.collection("persistent_notes").orderBy("timestamp", "asc").onSnapshot((querySnapshot) => {
@@ -195,7 +194,7 @@ function listenToNotepad() {
                     <p class="msg-text">${data.message}</p>
                 </div>`);
         });
-        notepadList.scrollTop = notepadList.scrollHeight; // Hep en alta kaydır
+        notepadList.scrollTop = notepadList.scrollHeight;
     });
 }
 
@@ -209,11 +208,10 @@ document.getElementById('add-notepad-btn').onclick = () => {
     .then(() => { msgInput.value = ""; }).catch(err => console.error(err));
 };
 
-// --- MODAL (AÇILIR PENCERE) KONTROLLERİ ---
+// --- MODAL (AÇILIR PENCERE) KONTROLLERİ VE HIZLI KONUMLAR ---
 const scheduleModal = document.getElementById('schedule-modal');
 const notepadModal = document.getElementById('notepad-modal');
 
-// Ders Programı Modalı
 function showScheduleModal(person) {
     document.getElementById('modal-name').innerText = person.name;
     const scheduleContainer = document.getElementById('modal-schedule-list');
@@ -247,7 +245,6 @@ function showScheduleModal(person) {
     scheduleModal.classList.add('active');
 }
 
-// Kapatma Tuşları ve Boşluğa Tıklama
 document.getElementById('close-modal').onclick = () => scheduleModal.classList.remove('active');
 document.getElementById('open-notepad-btn').onclick = () => notepadModal.classList.add('active');
 document.getElementById('close-notepad-btn').onclick = () => notepadModal.classList.remove('active');
@@ -257,45 +254,32 @@ window.onclick = (event) => {
     if (event.target == notepadModal) notepadModal.classList.remove('active'); 
 }
 
-// --- 5. OTOMATİK VERİTABANI TEMİZLİĞİ (GÖRÜNMEZ ÇÖPÇÜ) ---
-function cleanOldData() {
-    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
-    // Sadece notes ve locations temizlenir. "persistent_notes" (Notepad) güvendedir!
-    db.collection("notes").where("timestamp", "<", threeDaysAgo).get().then((snapshot) => {
-        snapshot.forEach((doc) => { db.collection("notes").doc(doc.id).delete(); });
-    });
-    db.collection("locations").where("timestamp", "<", threeDaysAgo).get().then((snapshot) => {
-        snapshot.forEach((doc) => { db.collection("locations").doc(doc.id).delete(); });
-    });
-}
-// --- 6. SINAV SAYACI (VİZE / FİNAL / BÜT) ---
+// --- YENİ: SINAV SAYACI (VİZE / FİNAL / BÜT) ---
 function updateExamCounter() {
     const counterDiv = document.getElementById('exam-counter');
     if(!counterDiv) return;
 
     const now = new Date();
-    now.setHours(0,0,0,0); // Gece yarısı baz alınır
+    now.setHours(0,0,0,0); 
 
-    // JavaScript'te aylar 0'dan başlar! (Ocak=0, Nisan=3, Haziran=5, Temmuz=6)
+    // Aylar 0'dan başlar: Ocak=0, Şubat=1, Mart=2, Nisan=3, Haziran=5, Temmuz=6
     const exams = [
         { name: "Vize", start: new Date(2026, 3, 6), end: new Date(2026, 3, 10) },
         { name: "Final", start: new Date(2026, 5, 8), end: new Date(2026, 5, 19) },
         { name: "Büt", start: new Date(2026, 5, 30), end: new Date(2026, 6, 3) }
     ];
 
-    let statusText = "Tatil Modu 🏖️"; // Sınavlar bitince çıkacak yazı
+    let statusText = "Tatil Modu 🏖️"; 
 
     for (let i = 0; i < exams.length; i++) {
         const exam = exams[i];
         
         if (now < exam.start) {
-            // Sınav henüz başlamadıysa gün say
             const diffTime = Math.abs(exam.start - now);
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             statusText = `${exam.name}lere Son ${diffDays} Gün ⏳`;
             break;
         } else if (now >= exam.start && now <= exam.end) {
-            // Sınav haftasındaysak kaçıncı gün olduğunu bul
             const diffTime = Math.abs(now - exam.start);
             const dayNum = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
             statusText = `${exam.name} Haftası (${dayNum}. Gün) ✍️`;

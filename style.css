@@ -3,32 +3,26 @@
 body { font-family: 'Inter', sans-serif; background-color: #0b1120; color: #f8fafc; margin: 0; padding: 20px 10px; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; }
 .container { width: 100%; max-width: 1000px; margin: 0 auto; }
 
-/* HEADER */
 header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; padding-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
 .logo-area { display: flex; align-items: center; gap: 10px; }
 h1 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
 .version-tag { background: #3b82f6; color: #fff; font-size: 10px; font-weight: 700; padding: 3px 6px; border-radius: 6px; letter-spacing: 1px; }
 
-/* YENİ: Header Sağ Taraf (Buton + Saat) */
 .header-right { display: flex; align-items: center; gap: 15px; }
 .notepad-btn { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); padding: 8px 14px; border-radius: 12px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s; font-family: 'Inter', sans-serif;}
 .notepad-btn:hover { background: #f59e0b; color: #fff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2); }
 .datetime-badge { background: rgba(30, 41, 59, 0.5); color: #94a3b8; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; border: 1px solid rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); }
 
-/* LAYOUT */
+/* SINAV SAYACI */
+.exam-badge { background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); padding: 8px 14px; border-radius: 12px; font-weight: 700; font-size: 13px; display: flex; align-items: center; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1); letter-spacing: 0.5px; }
+
 .main-layout { display: flex; gap: 30px; align-items: stretch; }
-@media (max-width: 850px) { 
-    .main-layout { flex-direction: column; } 
-    .dashboard, .campus-wall { width: 100% !important; } 
-}
-@media (max-width: 500px) {
-    .header-right { flex-direction: column; align-items: flex-end; gap: 10px; }
-}
+@media (max-width: 850px) { .main-layout { flex-direction: column; } .dashboard, .campus-wall { width: 100% !important; } }
+@media (max-width: 600px) { .header-right { flex-direction: column; align-items: flex-end; gap: 10px; } }
 
 .dashboard { width: 55%; }
 .campus-wall { width: 45%; background: #151e32; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 20px; display: flex; flex-direction: column; height: 650px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); overflow: hidden; }
 
-/* ORTAK STİLLER */
 .column-header { display: flex; align-items: center; margin-bottom: 16px; }
 .column-header h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 1.2px; color: #64748b; margin: 0; font-weight: 700; }
 .mt-gap { margin-top: 40px; }
@@ -39,7 +33,6 @@ h1 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
 .live-dot { background-color: #ef4444; box-shadow: 0 0 12px rgba(239, 68, 68, 0.6); animation: pulse-red 2s infinite; }
 @keyframes pulse-red { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
-/* KARTLAR */
 .card-grid { display: flex; flex-direction: column; gap: 12px; }
 .person-card { background: #1e293b; border: 1px solid rgba(255,255,255,0.03); border-radius: 16px; padding: 18px; cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
 .person-card:hover { background: #27354f; transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
@@ -52,7 +45,6 @@ h1 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
 .offline-card .person-name { color: #64748b; }
 .offline-card:hover { background: rgba(30,41,59,0.5); }
 
-/* KAMPÜS DUVARI */
 .wall-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(30, 41, 59, 0.3); display: flex; justify-content: space-between; align-items: center; }
 .live-status { font-size: 11px; color: #ef4444; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
 .wall-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; }
@@ -61,7 +53,9 @@ h1 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
 .wall-messages::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
 .wall-messages::-webkit-scrollbar-thumb:hover { background: #475569; }
 
-.message-card { background: #1e293b; padding: 14px 18px; border-radius: 18px; border-top-left-radius: 4px; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+/* KAYARAK GELEN MESAJ ANİMASYONU */
+@keyframes slideInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+.message-card { background: #1e293b; padding: 14px 18px; border-radius: 18px; border-top-left-radius: 4px; position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.1); animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 .msg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
 .msg-name { font-weight: 700; font-size: 13px; color: #38bdf8; }
 .msg-time { font-size: 11px; color: #64748b; font-weight: 500; }
@@ -78,7 +72,6 @@ h1 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
 .send-btn { background: #3b82f6; color: white; border: none; width: 36px; height: 36px; border-radius: 10px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s; }
 .send-btn:hover { filter: brightness(1.2); transform: scale(1.05); }
 
-/* MODALLAR (Açılır Pencereler) */
 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px); display: flex; justify-content: center; align-items: center; opacity: 0; visibility: hidden; transition: all 0.3s ease; z-index: 1000; padding: 20px; }
 .modal-overlay.active { opacity: 1; visibility: visible; }
 .modal-content { background: #0f172a; width: 100%; max-width: 420px; border-radius: 24px; padding: 30px; position: relative; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7); max-height: 85vh; overflow-y: auto; }
@@ -92,12 +85,10 @@ h1 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
 .modal-header h2 { margin: 0 0 5px 0; font-size: 22px; color: #f8fafc; }
 .modal-header p { margin: 0; font-size: 13px; color: #3b82f6; font-weight: 600;}
 
-/* Hızlı Konum */
 .location-update-area { display: flex; flex-wrap: wrap; gap: 8px; background: rgba(30, 41, 59, 0.5); padding: 16px; border-radius: 14px; margin-bottom: 22px; border: 1px dashed rgba(59, 130, 246, 0.3); }
 .loc-title { width: 100%; font-size: 12px; color: #94a3b8; margin: 0 0 6px 0; font-weight: 600; letter-spacing: 0.5px; }
 .loc-btn { flex: 1; background: #0f172a; color: #e2e8f0; border: 1px solid rgba(255,255,255,0.1); padding: 10px 0; border-radius: 10px; font-weight: 600; cursor: pointer; font-size: 13px; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); min-width: 25%; }
 .loc-btn:hover { background: #3b82f6; color: white; border-color: #3b82f6; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); }
-.manual-loc-info { margin-top: 12px; font-size: 13px; color: #38bdf8; font-weight: 600; display: flex; align-items: center; gap: 8px; background: rgba(56, 189, 248, 0.1); padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.2); }
 
 .schedule-day { margin-bottom: 16px; background: rgba(30,41,59,0.3); border-radius: 12px; padding: 15px; border: 1px solid rgba(255,255,255,0.02);}
 .day-title { font-size: 12px; text-transform: uppercase; color: #94a3b8; font-weight: 700; margin-bottom: 10px; letter-spacing: 1px; }
@@ -109,29 +100,3 @@ h1 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
 
 footer { margin-top: 50px; text-align: center; color: #475569; font-size: 12px; width: 100%; font-weight: 500;}
 .brand { color: #94a3b8; font-weight: 700; letter-spacing: 0.5px; }
-
-/* --- YENİ: SINAV SAYACI TASARIMI --- */
-.exam-badge {
-    background: rgba(239, 68, 68, 0.15);
-    color: #ef4444;
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    padding: 8px 14px;
-    border-radius: 12px;
-    font-weight: 700;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
-    letter-spacing: 0.5px;
-}
-
-/* --- YENİ: KAYARAK GELEN MESAJ ANİMASYONU --- */
-@keyframes slideInUp {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* style.css içinde zaten var olan .message-card sınıfını bulup bunu ekleyebilirsin veya direkt en alta bunu yapıştırırsan eskisini ezer, otomatik animasyonlu olur */
-.message-card {
-    animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
