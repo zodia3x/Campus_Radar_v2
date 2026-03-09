@@ -22,7 +22,8 @@ window.onload = () => {
     listenToWall();
     listenToLocations(); 
     listenToNotepad(); // YENİ: Sabit notları dinle
-    cleanOldData(); 
+    cleanOldData();
+    updateExamCounter(); 
 
     const savedName = localStorage.getItem("campusUserName");
     if (savedName) document.getElementById("sender-name").value = savedName;
@@ -266,4 +267,41 @@ function cleanOldData() {
     db.collection("locations").where("timestamp", "<", threeDaysAgo).get().then((snapshot) => {
         snapshot.forEach((doc) => { db.collection("locations").doc(doc.id).delete(); });
     });
+}
+// --- 6. SINAV SAYACI (VİZE / FİNAL / BÜT) ---
+function updateExamCounter() {
+    const counterDiv = document.getElementById('exam-counter');
+    if(!counterDiv) return;
+
+    const now = new Date();
+    now.setHours(0,0,0,0); // Gece yarısı baz alınır
+
+    // JavaScript'te aylar 0'dan başlar! (Ocak=0, Nisan=3, Haziran=5, Temmuz=6)
+    const exams = [
+        { name: "Vize", start: new Date(2026, 3, 6), end: new Date(2026, 3, 10) },
+        { name: "Final", start: new Date(2026, 5, 8), end: new Date(2026, 5, 19) },
+        { name: "Büt", start: new Date(2026, 5, 30), end: new Date(2026, 6, 3) }
+    ];
+
+    let statusText = "Tatil Modu 🏖️"; // Sınavlar bitince çıkacak yazı
+
+    for (let i = 0; i < exams.length; i++) {
+        const exam = exams[i];
+        
+        if (now < exam.start) {
+            // Sınav henüz başlamadıysa gün say
+            const diffTime = Math.abs(exam.start - now);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            statusText = `${exam.name}lere Son ${diffDays} Gün ⏳`;
+            break;
+        } else if (now >= exam.start && now <= exam.end) {
+            // Sınav haftasındaysak kaçıncı gün olduğunu bul
+            const diffTime = Math.abs(now - exam.start);
+            const dayNum = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+            statusText = `${exam.name} Haftası (${dayNum}. Gün) ✍️`;
+            break;
+        }
+    }
+
+    counterDiv.innerText = statusText;
 }

@@ -109,3 +109,29 @@ h1 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
 
 footer { margin-top: 50px; text-align: center; color: #475569; font-size: 12px; width: 100%; font-weight: 500;}
 .brand { color: #94a3b8; font-weight: 700; letter-spacing: 0.5px; }
+
+/* --- YENİ: SINAV SAYACI TASARIMI --- */
+.exam-badge {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 8px 14px;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1);
+    letter-spacing: 0.5px;
+}
+
+/* --- YENİ: KAYARAK GELEN MESAJ ANİMASYONU --- */
+@keyframes slideInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* style.css içinde zaten var olan .message-card sınıfını bulup bunu ekleyebilirsin veya direkt en alta bunu yapıştırırsan eskisini ezer, otomatik animasyonlu olur */
+.message-card {
+    animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
