@@ -18,15 +18,18 @@ let people = [];
 let activeLocations = {}; 
 const dayNames = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
 
-window. = () => {
+window.onload = () => {
     fetchScheduleData();
     listenToWall();
     listenToLocations(); 
     listenToNotepad(); 
-    updateExamCounter(); // Sınav sayacını başlat
+    updateExamCounter(); 
 
     const savedName = localStorage.getItem("campusUserName");
     if (savedName) document.getElementById("sender-name").value = savedName;
+    
+    // Püf Nokta: Sürpriz butonları sayfa tamamen yüklendikten sonra aktif ediyoruz!
+    setupEasterEggs();
 };
 
 async function fetchScheduleData() {
@@ -67,7 +70,7 @@ function parseCSV(csvText) {
     people = Object.values(peopleObj);
 }
 
-// --- KONUMLARI DİNLE (15 Dakikada Silinir) ---
+// --- KONUMLARI DİNLE ---
 function listenToLocations() {
     db.collection("locations").onSnapshot((querySnapshot) => {
         activeLocations = {}; 
@@ -128,7 +131,7 @@ function updateStatus() {
 }
 setInterval(fetchScheduleData, 60000);
 
-// --- KAMPÜS DUVARI MANTIĞI (24 Saat Geçerli & WP Gibi Tersten Akar) ---
+// --- KAMPÜS DUVARI ---
 function listenToWall() {
     const wallMessages = document.getElementById('wall-messages');
     db.collection("notes").orderBy("timestamp", "desc").limit(50).onSnapshot((querySnapshot) => {
@@ -155,7 +158,7 @@ function listenToWall() {
         if (validCount === 0) {
             wallMessages.innerHTML = "<div class='loading-text'>Son 24 saatte hiç mesaj atılmadı.</div>";
         } else {
-            wallMessages.scrollTop = wallMessages.scrollHeight; // WP gibi aşağı kaydır
+            wallMessages.scrollTop = wallMessages.scrollHeight; 
         }
     });
 }
@@ -171,7 +174,7 @@ function sendNote() {
 }
 function handleKeyPress(e) { if(e.key === 'Enter') sendNote(); }
 
-// --- SABİT NOTLAR (NOTEPAD) ---
+// --- SABİT NOTLAR ---
 function listenToNotepad() {
     const notepadList = document.getElementById('notepad-list');
     db.collection("persistent_notes").orderBy("timestamp", "asc").onSnapshot((querySnapshot) => {
@@ -208,7 +211,7 @@ document.getElementById('add-notepad-btn').onclick = () => {
     .then(() => { msgInput.value = ""; }).catch(err => console.error(err));
 };
 
-// --- MODAL (AÇILIR PENCERE) KONTROLLERİ VE HIZLI KONUMLAR ---
+// --- MODAL KONTROLLERİ ---
 const scheduleModal = document.getElementById('schedule-modal');
 const notepadModal = document.getElementById('notepad-modal');
 
@@ -254,7 +257,6 @@ window.onclick = (event) => {
     if (event.target == notepadModal) notepadModal.classList.remove('active'); 
 }
 
-// --- YENİ: SINAV SAYACI (VİZE / FİNAL / BÜT) ---
 function updateExamCounter() {
     const counterDiv = document.getElementById('exam-counter');
     if(!counterDiv) return;
@@ -262,7 +264,6 @@ function updateExamCounter() {
     const now = new Date();
     now.setHours(0,0,0,0); 
 
-    // Aylar 0'dan başlar: Ocak=0, Şubat=1, Mart=2, Nisan=3, Haziran=5, Temmuz=6
     const exams = [
         { name: "Vize", start: new Date(2026, 3, 6), end: new Date(2026, 3, 10) },
         { name: "Final", start: new Date(2026, 5, 8), end: new Date(2026, 5, 19) },
@@ -289,107 +290,68 @@ function updateExamCounter() {
 
     counterDiv.innerText = statusText;
 }
-// --- EASTER EGGS (2 FARKLI SÜRPRİZ) ---
 
-// Müzikleri sisteme tanıtıyoruz
-const fotoAudio = new Audio("foto-muzik.mp3");
-fotoAudio.loop = true;
+// --- EASTER EGGS (ZIRHLI VE GARANTİLİ YAPI) ---
+function setupEasterEggs() {
+    const logoArea = document.querySelector('.logo-area');
+    const secretModal = document.getElementById('secret-photo-overlay');
+    const fotoAudio = new Audio("foto-muzik.mp3");
+    fotoAudio.loop = true;
 
-const retroAudio = new Audio("retro.mp3");
-retroAudio.loop = true;
-// --- 1. LOGOYA 3 KERE TIKLAMA (FOTOĞRAF VE ÖZEL MÜZİK) ---
-const logoArea = document.querySelector('.logo-area');
-const secretModal = document.getElementById('secret-photo-overlay');
+    let logoClickCount = 0;
+    let logoClickTimer;
 
-let logoClickCount = 0;
-let logoClickTimer;
-
-logoArea.style.cursor = "pointer";
-logoArea.onclick = () => {
-    logoClickCount++;
-    clearTimeout(logoClickTimer); // Eski zamanlayıcıyı iptal et
-    
-    if (logoClickCount === 3) {
-        // 3. tıklamada fotoğrafı ve müziği aç
-        secretModal.classList.add('active');
-        fotoAudio.play().catch(e => console.log("Foto müzik engellendi:", e));
-        logoClickCount = 0; // Sayacı sıfırla ki kapatınca tekrar 3 tıkla açılabilsin
-    } else {
-        // Eğer 2 saniye içinde yeni tıklama gelmezse sayacı sıfırla
-        logoClickTimer = setTimeout(() => { logoClickCount = 0; }, 2000);
-    }
-};
-
-// Fotoğrafı kapatınca müziği de sustur
-document.getElementById('close-secret-btn').onclick = () => {
-    secretModal.classList.remove('active');
-    fotoAudio.pause();
-    fotoAudio.currentTime = 0; // Müziği başa sar
-};
-// ==========================================
-// --- EASTER EGGS (GİZLİ SÜRPRİZLER) ---
-// ==========================================
-
-// 1. Müzikleri Sisteme Tanıtıyoruz (İsimler GitHub'dakiyle aynı olmalı!)
-const fotoAudio = new Audio("foto-muzik.mp3");
-fotoAudio.loop = true;
-
-const retroAudio = new Audio("retro.mp3");
-retroAudio.loop = true;
-
-// --- SÜRPRİZ 1: LOGOYA 3 KERE TIKLAMA ---
-const logoArea = document.querySelector('.logo-area');
-const secretModal = document.getElementById('secret-photo-overlay');
-
-let logoClickCount = 0;
-let logoClickTimer;
-
-if (logoArea && secretModal) {
-    logoArea.style.cursor = "pointer";
-    logoArea.onclick = () => {
-        logoClickCount++;
-        clearTimeout(logoClickTimer);
-        
-        if (logoClickCount === 3) {
-            secretModal.classList.add('active');
-            fotoAudio.play().catch(e => console.log("Müzik çalınamadı:", e));
-            logoClickCount = 0; 
-        } else {
-            logoClickTimer = setTimeout(() => { logoClickCount = 0; }, 2000);
-        }
-    };
-
-    // Fotoğrafı Kapatma Butonu
-    document.getElementById('close-secret-btn').onclick = () => {
-        secretModal.classList.remove('active');
-        fotoAudio.pause();
-        fotoAudio.currentTime = 0; // Kapatınca müziği başa sar
-    };
-}
-
-// --- SÜRPRİZ 2: SAATE 5 KERE TIKLAMA (MATRIX MODU) ---
-const datetimeDisplay = document.getElementById('datetime-display');
-let retroClickCount = 0;
-let retroClickTimer;
-
-if (datetimeDisplay) {
-    datetimeDisplay.style.cursor = "pointer";
-    datetimeDisplay.onclick = () => {
-        retroClickCount++;
-        clearTimeout(retroClickTimer); 
-        
-        if (retroClickCount === 5) {
-            document.body.classList.toggle('retro-mode');
+    if (logoArea && secretModal) {
+        logoArea.style.cursor = "pointer"; 
+        logoArea.onclick = () => {
+            logoClickCount++;
+            clearTimeout(logoClickTimer);
             
-            if (document.body.classList.contains('retro-mode')) {
-                retroAudio.play().catch(e => console.log("Retro müzik çalınamadı:", e));
+            if (logoClickCount === 3) {
+                secretModal.classList.add('active');
+                fotoAudio.play().catch(e => console.log("Müzik hatası:", e));
+                logoClickCount = 0; 
             } else {
-                retroAudio.pause();
-                retroAudio.currentTime = 0;
+                logoClickTimer = setTimeout(() => { logoClickCount = 0; }, 2000);
             }
-            retroClickCount = 0; 
-        } else {
-            retroClickTimer = setTimeout(() => { retroClickCount = 0; }, 2000);
+        };
+
+        const closeBtn = document.getElementById('close-secret-btn');
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                secretModal.classList.remove('active');
+                fotoAudio.pause();
+                fotoAudio.currentTime = 0;
+            };
         }
-    };
+    }
+
+    const datetimeDisplay = document.getElementById('datetime-display');
+    const retroAudio = new Audio("retro.mp3");
+    retroAudio.loop = true;
+    
+    let retroClickCount = 0;
+    let retroClickTimer;
+
+    if (datetimeDisplay) {
+        datetimeDisplay.style.cursor = "pointer"; 
+        datetimeDisplay.onclick = () => {
+            retroClickCount++;
+            clearTimeout(retroClickTimer); 
+            
+            if (retroClickCount === 5) {
+                document.body.classList.toggle('retro-mode');
+                
+                if (document.body.classList.contains('retro-mode')) {
+                    retroAudio.play().catch(e => console.log("Müzik hatası:", e));
+                } else {
+                    retroAudio.pause();
+                    retroAudio.currentTime = 0;
+                }
+                retroClickCount = 0; 
+            } else {
+                retroClickTimer = setTimeout(() => { retroClickCount = 0; }, 2000);
+            }
+        };
+    }
 }
