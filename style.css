@@ -100,3 +100,34 @@ h1 { font-size: 24px; font-weight: 700; margin: 0; letter-spacing: -0.5px; }
 
 footer { margin-top: 50px; text-align: center; color: #475569; font-size: 12px; width: 100%; font-weight: 500;}
 .brand { color: #94a3b8; font-weight: 700; letter-spacing: 0.5px; }
+/* --- EASTER EGG: MATRIX / RETRO MODU --- */
+@keyframes matrixFlicker {
+    0% { opacity: 1; }
+    50% { opacity: 0.85; text-shadow: 0 0 15px #39ff14, 0 0 30px #39ff14; }
+    100% { opacity: 1; }
+}
+
+body.retro-mode {
+    background-color: #000 !important;
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(57, 255, 20, 0.1) 2px, rgba(57, 255, 20, 0.1) 4px) !important;
+    font-family: 'Courier New', Courier, monospace !important;
+    color: #39ff14 !important;
+    text-shadow: 0 0 8px #39ff14 !important;
+    animation: matrixFlicker 0.15s infinite !important;
+}
+
+body.retro-mode .container, body.retro-mode .campus-wall, body.retro-mode .person-card, body.retro-mode .wall-header, body.retro-mode .wall-input-area, body.retro-mode .modal-content, body.retro-mode .schedule-day {
+    background-color: rgba(0, 15, 0, 0.9) !important;
+    border: 2px solid #39ff14 !important;
+    border-radius: 0 !important;
+    box-shadow: inset 0 0 15px rgba(57, 255, 20, 0.2) !important;
+}
+
+body.retro-mode h1, body.retro-mode h2, body.retro-mode span, body.retro-mode p, body.retro-mode div, body.retro-mode input {
+    font-family: 'Courier New', Courier, monospace !important;
+    color: #39ff14 !important;
+}
+
+body.retro-mode .send-btn, body.retro-mode .loc-btn, body.retro-mode .notepad-btn { 
+    background: #000 !important; border: 1px solid #39ff14 !important; border-radius: 0 !important; color: #39ff14 !important;
+}

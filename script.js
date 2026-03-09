@@ -289,3 +289,66 @@ function updateExamCounter() {
 
     counterDiv.innerText = statusText;
 }
+// --- EASTER EGGS (2 FARKLI SÜRPRİZ) ---
+
+// Müzikleri sisteme tanıtıyoruz
+const fotoAudio = new Audio("foto-muzik.mp3");
+fotoAudio.loop = true;
+
+const retroAudio = new Audio("retro.mp3");
+retroAudio.loop = true;
+// --- 1. LOGOYA 3 KERE TIKLAMA (FOTOĞRAF VE ÖZEL MÜZİK) ---
+const logoArea = document.querySelector('.logo-area');
+const secretModal = document.getElementById('secret-photo-overlay');
+
+let logoClickCount = 0;
+let logoClickTimer;
+
+logoArea.style.cursor = "pointer";
+logoArea.onclick = () => {
+    logoClickCount++;
+    clearTimeout(logoClickTimer); // Eski zamanlayıcıyı iptal et
+    
+    if (logoClickCount === 3) {
+        // 3. tıklamada fotoğrafı ve müziği aç
+        secretModal.classList.add('active');
+        fotoAudio.play().catch(e => console.log("Foto müzik engellendi:", e));
+        logoClickCount = 0; // Sayacı sıfırla ki kapatınca tekrar 3 tıkla açılabilsin
+    } else {
+        // Eğer 2 saniye içinde yeni tıklama gelmezse sayacı sıfırla
+        logoClickTimer = setTimeout(() => { logoClickCount = 0; }, 2000);
+    }
+};
+
+// Fotoğrafı kapatınca müziği de sustur
+document.getElementById('close-secret-btn').onclick = () => {
+    secretModal.classList.remove('active');
+    fotoAudio.pause();
+    fotoAudio.currentTime = 0; // Müziği başa sar
+};
+
+// 2. SAATE 5 KERE TIKLAMA (MATRIX MODU VE 8-BIT MÜZİK)
+const datetimeDisplay = document.getElementById('datetime-display');
+datetimeDisplay.style.cursor = "pointer";
+
+let retroClickCount = 0;
+let retroClickTimer;
+
+datetimeDisplay.onclick = () => {
+    retroClickCount++;
+    clearTimeout(retroClickTimer); 
+    
+    if (retroClickCount === 5) {
+        document.body.classList.toggle('retro-mode');
+        
+        if (document.body.classList.contains('retro-mode')) {
+            retroAudio.play().catch(e => console.log("Retro müzik engellendi:", e));
+        } else {
+            retroAudio.pause();
+            retroAudio.currentTime = 0;
+        }
+        retroClickCount = 0; 
+    } else {
+        retroClickTimer = setTimeout(() => { retroClickCount = 0; }, 2000);
+    }
+};
