@@ -66,18 +66,19 @@ function parseCSV(csvText) {
     people = Object.values(peopleObj);
 }
 
-// --- KONUMLARI DİNLE (1 Saatte Silinir) ---
+// --- KONUMLARI DİNLE (15 Dakikada Silinir) ---
 function listenToLocations() {
     db.collection("locations").onSnapshot((querySnapshot) => {
         activeLocations = {}; 
         const now = new Date();
-        const oneHourInMs = 1 * 60 * 60 * 1000;
+        const fifteenMinsInMs = 15 * 60 * 1000; // 15 Dakika ayarı
 
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             if(data.timestamp) {
                 const locDate = data.timestamp.toDate();
-                if (now - locDate < oneHourInMs) {
+                // Sadece son 15 dakika içindeki konumları geçerli say
+                if (now - locDate < fifteenMinsInMs) {
                     activeLocations[doc.id] = data.location;
                 }
             }
@@ -127,44 +128,48 @@ function updateStatus() {
 }
 setInterval(fetchScheduleData, 60000);
 
-// --- KAMPÜS DUVARI MANTIĞI (1 Saatte Silinir) ---
+// --- KAMPÜS DUVARI MANTIĞI (24 Saatte Silinir & WP Gibi Aşağı Akar) ---
 function listenToWall() {
     const wallMessages = document.getElementById('wall-messages');
     db.collection("notes").orderBy("timestamp", "desc").limit(50).onSnapshot((querySnapshot) => {
         wallMessages.innerHTML = ""; 
-        if(querySnapshot.empty) { wallMessages.innerHTML = "<div class='loading-text'>Sessizlik hakim. İlk mesajı sen yaz!</div>"; return; }
+        if(querySnapshot.empty) { 
+            wallMessages.innerHTML = "<div class='loading-text'>Sessizlik hakim. İlk mesajı sen yaz!</div>"; 
+            return; 
+        }
 
-        let validCount = 0; const now = new Date(); const oneHourInMs = 1 * 60 * 60 * 1000;
+        let validCount = 0; 
+        const now = new Date(); 
+        const twentyFourHoursInMs = 24 * 60 * 60 * 1000; // 24 Saat ayarı
 
         querySnapshot.forEach((doc) => {
             const data = doc.data();
             if(data.timestamp) {
                 const msgDate = data.timestamp.toDate();
-                if (now - msgDate > oneHourInMs) return; 
+                // 24 saatten eski mesajları ekranda gösterme
+                if (now - msgDate > twentyFourHoursInMs) return; 
                 validCount++;
-                const h = String(msgDate.getHours()).padStart(2, '0'); const m = String(msgDate.getMinutes()).padStart(2, '0');
                 
-                wallMessages.insertAdjacentHTML('beforeend', `
+                const h = String(msgDate.getHours()).padStart(2, '0'); 
+                const m = String(msgDate.getMinutes()).padStart(2, '0');
+                
+                // WP tarzı için 'afterbegin' kullanıyoruz (eski mesajlar üste, yeniler alta)
+                wallMessages.insertAdjacentHTML('afterbegin', `
                     <div class="message-card">
                         <div class="msg-header"><span class="msg-name">${data.name}</span><span class="msg-time">${h}:${m}</span></div>
                         <p class="msg-text">${data.message}</p>
                     </div>`);
             }
         });
-        if (validCount === 0) wallMessages.innerHTML = "<div class='loading-text'>Son 1 saatte hiç mesaj atılmadı.</div>";
+        
+        if (validCount === 0) {
+            wallMessages.innerHTML = "<div class='loading-text'>Son 24 saatte hiç mesaj atılmadı.</div>";
+        } else {
+            // Mesajlar eklendikten sonra WP gibi otomatik en alta kaydır
+            wallMessages.scrollTop = wallMessages.scrollHeight;
+        }
     });
 }
-
-function sendNote() {
-    const nameStr = document.getElementById('sender-name').value.trim();
-    const messageStr = document.getElementById('message-text').value.trim();
-    if(nameStr === "" || messageStr === "") return;
-
-    localStorage.setItem("campusUserName", nameStr);
-    db.collection("notes").add({ name: nameStr, message: messageStr, timestamp: firebase.firestore.FieldValue.serverTimestamp() })
-    .then(() => { document.getElementById('message-text').value = ""; }).catch(err => console.error(err));
-}
-function handleKeyPress(e) { if(e.key === 'Enter') sendNote(); }
 
 // --- YENİ: SABİT NOTLAR (NOTEPAD) MANTIĞI (Asla Silinmez) ---
 function listenToNotepad() {
@@ -222,7 +227,7 @@ function showScheduleModal(person) {
     document.getElementById('loc-btn-kantin').onclick = () => updateLoc('Kantin');
     document.getElementById('loc-btn-ring').onclick = () => updateLoc('Ring');
     document.getElementById('loc-btn-sigara').onclick = () => updateLoc('Kantin Arkası 🚬');
-    document.getElementById('loc-btn-carsi').onclick = () => updateLoc('Çarşı');
+    document.getElementById('loc-btn-carsi').onclick = () => updateLoc('Çarşıda');
     document.getElementById('loc-btn-bilardo').onclick = () => updateLoc('Yab. Dil. Bilardo 🎱');
     document.getElementById('loc-btn-yemekhane').onclick = () => updateLoc('Yemekhane 🍽️');
 
@@ -261,5 +266,4 @@ function cleanOldData() {
     db.collection("locations").where("timestamp", "<", threeDaysAgo).get().then((snapshot) => {
         snapshot.forEach((doc) => { db.collection("locations").doc(doc.id).delete(); });
     });
-
 }
