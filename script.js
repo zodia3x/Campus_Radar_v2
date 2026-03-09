@@ -291,11 +291,18 @@ function updateExamCounter() {
     counterDiv.innerText = statusText;
 }
 
-// --- EASTER EGGS (ZIRHLI VE GARANTİLİ YAPI) ---
+// ==========================================
+// --- EASTER EGGS (NİNJA VE MATRIX VERSİYONU) ---
+// ==========================================
 function setupEasterEggs() {
+    
+    // --- SÜRPRİZ 1: LOGOYA 3 KERE TIKLAMA (ŞİFRELİ) ---
     const logoArea = document.querySelector('.logo-area');
     const secretModal = document.getElementById('secret-photo-overlay');
-    const fotoAudio = new Audio("foto-muzik.mp3");
+    const secretImg = document.getElementById('secret-ninja-img');
+    
+    // Müzik dosyasının adını Base64 ile gizledik (foto-muzik.mp3)
+    const fotoAudio = new Audio(atob("Zm90by1tdXppay5tcDM="));
     fotoAudio.loop = true;
 
     let logoClickCount = 0;
@@ -308,6 +315,11 @@ function setupEasterEggs() {
             clearTimeout(logoClickTimer);
             
             if (logoClickCount === 3) {
+                // 3. Tıklamada fotoğrafın adını Base64'ten çöz (gizli-foto.jpg)
+                if (secretImg) {
+                    secretImg.src = atob("Z2l6bGktZm90by5qcGc=");
+                    secretImg.style.display = "block";
+                }
                 secretModal.classList.add('active');
                 fotoAudio.play().catch(e => console.log("Müzik hatası:", e));
                 logoClickCount = 0; 
@@ -322,10 +334,15 @@ function setupEasterEggs() {
                 secretModal.classList.remove('active');
                 fotoAudio.pause();
                 fotoAudio.currentTime = 0;
+                // Kapatınca fotoğrafın izini tamamen kaybettir
+                if (secretImg) {
+                    setTimeout(() => { secretImg.src = ""; secretImg.style.display = "none"; }, 300);
+                }
             };
         }
     }
 
+    // --- SÜRPRİZ 2: SAATE 5 KERE TIKLAMA (MATRIX MODU) ---
     const datetimeDisplay = document.getElementById('datetime-display');
     const retroAudio = new Audio("retro.mp3");
     retroAudio.loop = true;
@@ -343,7 +360,7 @@ function setupEasterEggs() {
                 document.body.classList.toggle('retro-mode');
                 
                 if (document.body.classList.contains('retro-mode')) {
-                    retroAudio.play().catch(e => console.log("Müzik hatası:", e));
+                    retroAudio.play().catch(e => console.log("Retro müzik hatası:", e));
                 } else {
                     retroAudio.pause();
                     retroAudio.currentTime = 0;
