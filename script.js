@@ -18,7 +18,7 @@ let people = [];
 let activeLocations = {}; 
 const dayNames = ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"];
 
-window.onload = () => {
+window. = () => {
     fetchScheduleData();
     listenToWall();
     listenToLocations(); 
@@ -326,29 +326,70 @@ document.getElementById('close-secret-btn').onclick = () => {
     fotoAudio.pause();
     fotoAudio.currentTime = 0; // Müziği başa sar
 };
+// ==========================================
+// --- EASTER EGGS (GİZLİ SÜRPRİZLER) ---
+// ==========================================
 
-// 2. SAATE 5 KERE TIKLAMA (MATRIX MODU VE 8-BIT MÜZİK)
+// 1. Müzikleri Sisteme Tanıtıyoruz (İsimler GitHub'dakiyle aynı olmalı!)
+const fotoAudio = new Audio("foto-muzik.mp3");
+fotoAudio.loop = true;
+
+const retroAudio = new Audio("retro.mp3");
+retroAudio.loop = true;
+
+// --- SÜRPRİZ 1: LOGOYA 3 KERE TIKLAMA ---
+const logoArea = document.querySelector('.logo-area');
+const secretModal = document.getElementById('secret-photo-overlay');
+
+let logoClickCount = 0;
+let logoClickTimer;
+
+if (logoArea && secretModal) {
+    logoArea.style.cursor = "pointer";
+    logoArea.onclick = () => {
+        logoClickCount++;
+        clearTimeout(logoClickTimer);
+        
+        if (logoClickCount === 3) {
+            secretModal.classList.add('active');
+            fotoAudio.play().catch(e => console.log("Müzik çalınamadı:", e));
+            logoClickCount = 0; 
+        } else {
+            logoClickTimer = setTimeout(() => { logoClickCount = 0; }, 2000);
+        }
+    };
+
+    // Fotoğrafı Kapatma Butonu
+    document.getElementById('close-secret-btn').onclick = () => {
+        secretModal.classList.remove('active');
+        fotoAudio.pause();
+        fotoAudio.currentTime = 0; // Kapatınca müziği başa sar
+    };
+}
+
+// --- SÜRPRİZ 2: SAATE 5 KERE TIKLAMA (MATRIX MODU) ---
 const datetimeDisplay = document.getElementById('datetime-display');
-datetimeDisplay.style.cursor = "pointer";
-
 let retroClickCount = 0;
 let retroClickTimer;
 
-datetimeDisplay.onclick = () => {
-    retroClickCount++;
-    clearTimeout(retroClickTimer); 
-    
-    if (retroClickCount === 5) {
-        document.body.classList.toggle('retro-mode');
+if (datetimeDisplay) {
+    datetimeDisplay.style.cursor = "pointer";
+    datetimeDisplay.onclick = () => {
+        retroClickCount++;
+        clearTimeout(retroClickTimer); 
         
-        if (document.body.classList.contains('retro-mode')) {
-            retroAudio.play().catch(e => console.log("Retro müzik engellendi:", e));
+        if (retroClickCount === 5) {
+            document.body.classList.toggle('retro-mode');
+            
+            if (document.body.classList.contains('retro-mode')) {
+                retroAudio.play().catch(e => console.log("Retro müzik çalınamadı:", e));
+            } else {
+                retroAudio.pause();
+                retroAudio.currentTime = 0;
+            }
+            retroClickCount = 0; 
         } else {
-            retroAudio.pause();
-            retroAudio.currentTime = 0;
+            retroClickTimer = setTimeout(() => { retroClickCount = 0; }, 2000);
         }
-        retroClickCount = 0; 
-    } else {
-        retroClickTimer = setTimeout(() => { retroClickCount = 0; }, 2000);
-    }
-};
+    };
+}
